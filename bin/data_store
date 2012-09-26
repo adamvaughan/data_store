@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+
+$:.push File.expand_path('../../lib', __FILE__)
+
+require 'data_store'
+require 'optparse'
+require 'ostruct'
+
+def dump_file(path)
+  file = DataStore::DataFile.new(path)
+  record_count = 0
+
+  puts
+  puts "Measurement: #{file.uuid}"
+  puts "Start Time:  #{file.start_time}"
+  puts "End Time:    #{file.end_time}"
+  puts
+  puts '  Time                     |  Value'
+  puts '--------------------------------------'
+
+  file.records.each do |record|
+    puts "#{record.time}  |  #{'%0.6f' % record.value}"
+    record_count += 1
+  end
+
+  file.close
+
+  puts
+  puts "Dumped #{record_count} records."
+  puts
+end
+
+options = OpenStruct.new
+options.port = 3490
+
+OptionParser.new do |opts|
+  opts.banner = 'Usage: data_store [options]'
+
+  opts.on '-p', '--port [PORT]', Integer, 'Port to listen on' do |value|
+    options.port = value
+  end
+
+  opts.on '-d', '--dump [FILE]', String, 'File to dump' do |value|
+    dump_file value
+    exit
+  end
+end.parse!
+
+DataStore::Server.start('0.0.0.0', options.port) do |server|
+  server.data_directory = '/Users/adam/Desktop'
+end
